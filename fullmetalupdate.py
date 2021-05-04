@@ -82,10 +82,10 @@ async def main():
                                           AUTH_TOKEN, ATTRIBUTES)
 
         if not client.init_checkout_existing_containers():
-            client.logger.info("There is no containers pre-installed on the target")
+            client.logger.info("ConTest :: There is no containers pre-installed on the target")
 
         if not client.init_ostree_remotes(OSTREE_REMOTE_ATTRIBUTES):
-            client.logger.error("Cannot initialize OSTree remote from config file '{}'".format(cfg_path.name))
+            client.logger.error("ConTest :: Cannot initialize OSTree remote from config file '{}'".format(cfg_path.name))
         else:
             await client.start_polling()
 

@@ -41,7 +41,7 @@ class AsyncUpdater(object):
 
         self.sysroot = OSTree.Sysroot.new_default()
         self.sysroot.load(None)
-        self.logger.info("Cleaning the sysroot")
+        self.logger.info("ConTest :: Cleaning the sysroot")
         self.sysroot.cleanup(None)
 
         [_, repo] = self.sysroot.get_repo()
@@ -50,10 +50,10 @@ class AsyncUpdater(object):
         self.remote_name_os = None
         self.repo_containers = OSTree.Repo.new(Gio.File.new_for_path(PATH_REPO_APPS))
         if os.path.exists(PATH_REPO_APPS):
-            self.logger.info("Preinstalled OSTree for containers, we use it")
+            self.logger.info("ConTest :: Preinstalled OSTree for containers, we use it")
             self.repo_containers.open(None)
         else:
-            self.logger.info("No preinstalled OSTree for containers, we create "
+            self.logger.info("ConTest :: No preinstalled OSTree for containers, we create "
                              "one")
             self.repo_containers.create(OSTree.RepoMode.BARE_USER_ONLY, None)
 
@@ -68,12 +68,12 @@ class AsyncUpdater(object):
         """
         try:
             if subprocess.call(["fw_setenv", "success", "1"]) == 0:
-                self.logger.info("Setting success u-boot environment variable to 1 succeeded")
+                self.logger.info("ConTest :: Setting success u-boot environment variable to 1 succeeded")
             else:
-                self.logger.error("Setting success u-boot environment variable to 1 failed")
+                self.logger.error("ConTest :: Setting success u-boot environment variable to 1 failed")
 
         except subprocess.CalledProcessError as e:
-            self.logger.error("Ostree rollback post-process commands failed ({})".format(str(e)))
+            self.logger.error("ConTest :: Ostree rollback post-process commands failed ({})".format(str(e)))
 
     def check_for_rollback(self, revision):
         """
@@ -100,19 +100,19 @@ class AsyncUpdater(object):
                 has_rollbacked = True
                 self.logger.warning("The system rollbacked. Checking if we needed to undeploy")
                 if deployments[0] is not None:
-                    self.logger.info("There is a pending deployment. Undeploying...")
+                    self.logger.info("ConTest :: There is a pending deployment. Undeploying...")
                     # 0 is the index of the pending deployment (if there is one)
                     if subprocess.call(["ostree", "admin", "undeploy", "0"]) != 0:
-                        self.logger.error("Undeployment failed")
+                        self.logger.error("ConTest :: Undeployment failed")
                     else:
-                        self.logger.info("Undeployment successful")
+                        self.logger.info("ConTest :: Undeployment successful")
             else:
-                self.logger.info("No undeployment needed")
+                self.logger.info("ConTest :: No undeployment needed")
 
             return has_rollbacked
 
         except subprocess.CalledProcessError as e:
-            self.logger.error("Ostree rollback post-process commands failed ({})".format(str(e)))
+            self.logger.error("ConTest :: Ostree rollback post-process commands failed ({})".format(str(e)))
             return False
 
     def init_ostree_remotes(self, ostree_remote_attributes):
@@ -131,7 +131,7 @@ class AsyncUpdater(object):
         self.ostree_remote_attributes = ostree_remote_attributes
         opts = GLib.Variant('a{sv}', {'gpg-verify': GLib.Variant('b', ostree_remote_attributes['gpg-verify'])})
         try:
-            self.logger.info("Initalize remotes for the OS ostree: {}".format(ostree_remote_attributes['name']))
+            self.logger.info("ConTest :: Initalize remotes for the OS ostree: {}".format(ostree_remote_attributes['name']))
             if not ostree_remote_attributes['name'] in self.repo_os.remote_list():
                 self.repo_os.remote_add(ostree_remote_attributes['name'],
                                         ostree_remote_attributes['url'],
@@ -140,17 +140,17 @@ class AsyncUpdater(object):
 
             [_, refs] = self.repo_containers.list_refs(None, None)
 
-            self.logger.info("Initalize remotes for the containers ostree: {}".format(refs))
+            self.logger.info("ConTest :: Initalize remotes for the containers ostree: {}".format(refs))
             for ref in refs:
                 remote_name = ref.split(':')[0]
                 if remote_name not in self.repo_containers.remote_list():
-                    self.logger.info("We had the remote: {}".format(remote_name))
+                    self.logger.info("ConTest :: We had the remote: {}".format(remote_name))
                     self.repo_containers.remote_add(remote_name,
                                                     ostree_remote_attributes['url'],
                                                     opts, None)
 
         except GLib.Error as e:
-            self.logger.error("OSTRee remote initialization failed ({})".format(str(e)))
+            self.logger.error("ConTest :: OSTRee remote initialization failed ({})".format(str(e)))
             res = False
 
         return res
@@ -203,7 +203,7 @@ class AsyncUpdater(object):
          - False otherwise
         """
         res = True
-        self.logger.info("Getting refs from repo:{}".format(PATH_REPO_APPS))
+        self.logger.info("ConTest :: Getting refs from repo:{}".format(PATH_REPO_APPS))
 
         try:
             [_, refs] = self.repo_containers.list_refs(None, None)
@@ -213,31 +213,31 @@ class AsyncUpdater(object):
                     self.checkout_container(container_name, None)
                     self.update_container_ids(container_name)
                 if not res:
-                    self.logger.error("Error when checking out container:{}".format(container_name))
+                    self.logger.error("ConTest :: Error when checking out container:{}".format(container_name))
                     break
                 self.create_and_start_unit(container_name)
         except (GLib.Error, Exception) as e:
-            self.logger.error("Error checking out containers repo ({})".format(e))
+            self.logger.error("ConTest :: Error checking out containers repo ({})".format(e))
             res = False
         return res
 
     def start_unit(self, container_name):
         """This method starts the systemd unit for container_name."""
-        self.logger.info("Enable the container {}".format(container_name))
+        self.logger.info("ConTest :: Enable the container {}".format(container_name))
         self.systemd.EnableUnitFiles([container_name + '.service'], False, False)
-        self.logger.info("Since FILE_AUTOSTART is present, start the container using systemd")
+        self.logger.info("ConTest :: Since FILE_AUTOSTART is present, start the container using systemd")
         self.systemd.StartUnit(container_name + '.service', "replace")
 
     def stop_unit(self, container_name):
         """This method stops the systemd unit for container_name."""
-        self.logger.info("Since FILE_AUTOSTART is not present, stop the container using systemd")
+        self.logger.info("ConTest :: Since FILE_AUTOSTART is not present, stop the container using systemd")
         self.systemd.StopUnit(container_name + '.service', "replace")
-        self.logger.info("Disable the container {}".format(container_name))
+        self.logger.info("ConTest :: Disable the container {}".format(container_name))
         self.systemd.DisableUnitFiles([container_name + '.service'], False)
 
     def create_and_start_unit(self, container_name):
         """This method creates the unit for container_name, and starts it of AUTOSTART exists."""
-        self.logger.info("Copy the service file to /etc/systemd/system/{}.service".format(container_name))
+        self.logger.info("ConTest :: Copy the service file to /etc/systemd/system/{}.service".format(container_name))
         shutil.copy(PATH_APPS + '/' + container_name + '/systemd.service',
                     PATH_SYSTEMD_UNITS + container_name + '.service')
         if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
@@ -269,12 +269,12 @@ class AsyncUpdater(object):
             opts = GLib.Variant('a{sv}', {'flags': GLib.Variant('i', OSTree.RepoPullFlags.NONE),
                                           'refs': GLib.Variant('as', (ref_sha,)),
                                           'depth': GLib.Variant('i', OSTREE_DEPTH)})
-            self.logger.info("Pulling remote {} from OSTree repo ({})".format(ref_name, ref_sha))
+            self.logger.info("ConTest :: ConTest :: Pulling remote {} from OSTree repo ({})".format(ref_name, ref_sha))
             res = repo.pull_with_options(ref_name, opts, progress, None)
             progress.finish()
-            self.logger.info("Upgrader pulled {} from OSTree repo ({})".format(ref_name, ref_sha))
+            self.logger.info("ConTest :: Upgrader pulled {} from OSTree repo ({})".format(ref_name, ref_sha))
         except GLib.Error as e:
-            self.logger.error("Pulling {} from OSTree repo failed ({})".format(ref_name, str(e)))
+            self.logger.error("ConTest :: Pulling {} from OSTree repo failed ({})".format(ref_name, str(e)))
             raise
         if not res:
             raise Exception("Pulling {} failed (returned False)".format(ref_name))
@@ -297,16 +297,16 @@ class AsyncUpdater(object):
                                     {'gpg-verify': GLib.Variant('b', self.ostree_remote_attributes['gpg-verify'])})
                 # Check if this container was not installed previously
                 if container_name not in self.repo_containers.remote_list():
-                    self.logger.info("New container added to the target, "
+                    self.logger.info("ConTest :: New container added to the target, "
                                      "we install the remote: {}".format(container_name))
                     self.repo_containers.remote_add(container_name,
                                                     self.ostree_remote_attributes['url'],
                                                     opts, None)
                 else:
-                    self.logger.info("New container {} added to the target but the remote "
+                    self.logger.info("ConTest :: New container {} added to the target but the remote "
                                      "already exists, we do nothing".format(container_name))
         except GLib.Error as e:
-            self.logger.error("Initializing {} remote failed ({})".format(container_name, str(e)))
+            self.logger.error("ConTest :: Initializing {} remote failed ({})".format(container_name, str(e)))
             raise
 
     def update_container_ids(self, container_name):
@@ -317,7 +317,7 @@ class AsyncUpdater(object):
         Parameters:
         container_name (str): the name of the container
         """
-        self.logger.info("Update the UID and GID of the rootfs")
+        self.logger.info("ConTest :: Update the UID and GID of the rootfs")
         os.chown(PATH_APPS + '/' + container_name, CONTAINER_UID, CONTAINER_GID)
         for dirpath, dirnames, filenames in os.walk(PATH_APPS + '/' + container_name):
             for dname in dirnames:
@@ -337,12 +337,12 @@ class AsyncUpdater(object):
         autoremove (int): if set to 1, the container's directory will be deleted
         """
         if autoremove == 1:
-            self.logger.info("Remove the directory: {}".format(PATH_APPS + '/' + container_name))
+            self.logger.info("ConTest :: Remove the directory: {}".format(PATH_APPS + '/' + container_name))
             shutil.rmtree(PATH_APPS + '/' + container_name)
         else:
             service = self.systemd.ListUnitsByNames([container_name + '.service'])
             if service[0][2] == 'not-found':
-                self.logger.info("First installation of the container {} on the "
+                self.logger.info("ConTest :: First installation of the container {} on the "
                                  "system, we create and start the service".format(container_name))
                 self.create_and_start_unit(container_name)
             else:
@@ -366,7 +366,7 @@ class AsyncUpdater(object):
         """
         service = self.systemd.ListUnitsByNames([container_name + '.service'])
         if service[0][2] != 'not-found':
-            self.logger.info("Stop the container {}".format(container_name))
+            self.logger.info("ConTest :: Stop the container {}".format(container_name))
             self.stop_unit(container_name)
 
         res = True
@@ -379,23 +379,23 @@ class AsyncUpdater(object):
             options.no_copy_fallback = True
             options.mode = OSTree.RepoCheckoutMode.USER
 
-            self.logger.info("Getting rev from repo:{}".format(container_name + ':' + container_name))
+            self.logger.info("ConTest :: Getting rev from repo:{}".format(container_name + ':' + container_name))
 
             if rev_number is None:
                 rev = self.repo_containers.resolve_rev(container_name + ':' + container_name, False)[1]
             else:
                 rev = rev_number
-            self.logger.info("Rev value:{}".format(rev))
+            self.logger.info("ConTest :: Rev value:{}".format(rev))
             if os.path.isdir(PATH_APPS + '/' + container_name):
                 shutil.rmtree(PATH_APPS + '/' + container_name)
             os.mkdir(PATH_APPS + '/' + container_name)
-            self.logger.info("Create directory {}/{}".format(PATH_APPS, container_name))
+            self.logger.info("ConTest :: Create directory {}/{}".format(PATH_APPS, container_name))
             rootfs_fd = os.open(PATH_APPS + '/' + container_name, os.O_DIRECTORY)
             res = self.repo_containers.checkout_at(options, rootfs_fd, PATH_APPS + '/' + container_name, rev)
             open(PATH_APPS + '/' + container_name + '/' + VALIDATE_CHECKOUT, 'a').close()
 
         except GLib.Error as e:
-            self.logger.error("Checking out {} failed ({})".format(container_name, str(e)))
+            self.logger.error("ConTest :: Checking out {} failed ({})".format(container_name, str(e)))
             raise
         if rootfs_fd is not None:
             os.close(rootfs_fd)
@@ -414,10 +414,10 @@ class AsyncUpdater(object):
 
             [res, _] = self.sysroot.stage_tree(osname, checksum, origin, booted_dep, None, None)
 
-            self.logger.info("Staged the new OS tree. The new deployment will be ready after a reboot")
+            self.logger.info("ConTest :: Staged the new OS tree. The new deployment will be ready after a reboot")
 
         except GLib.Error as e:
-            self.logger.error("Failed while staging new OS tree ({})".format(e))
+            self.logger.error("ConTest :: Failed while staging new OS tree ({})".format(e))
             raise
         if not res:
             raise Exception("Failed while staging new OS tree (returned False)")
@@ -428,11 +428,11 @@ class AsyncUpdater(object):
         procedure.
         """
         try:
-            self.logger.info("Deleting init_var u-boot environment variable")
+            self.logger.info("ConTest :: Deleting init_var u-boot environment variable")
             if subprocess.call(["fw_setenv", "init_var"]) != 0:
-                self.logger.error("Deleting init_var variable from u-boot environment failed")
+                self.logger.error("ConTest :: Deleting init_var variable from u-boot environment failed")
             else:
-                self.logger.info("Deleting init_var variable from u-boot environment succeeded")
+                self.logger.info("ConTest :: Deleting init_var variable from u-boot environment succeeded")
         except subprocess.CalledProcessError as e:
-            self.logger.error("Deleting init_var variable from u-boot environment failed ({})".format(e))
+            self.logger.error("ConTest :: Deleting init_var variable from u-boot environment failed ({})".format(e))
             raise

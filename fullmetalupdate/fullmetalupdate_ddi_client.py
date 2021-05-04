@@ -55,29 +55,29 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             try:
                 await self.poll_base_resource()
             except asyncio.CancelledError:
-                self.logger.info('Polling cancelled')
+                self.logger.info('ConTest :: Polling cancelled')
                 break
             except asyncio.TimeoutError:
-                self.logger.warning('Polling failed due to TimeoutError')
+                self.logger.warning('ConTest :: Polling failed due to TimeoutError')
             except (APIError, TimeoutError, ClientOSError, ClientResponseError) as e:
                 # log error and start all over again
-                self.logger.warning('Polling failed with a temporary error: {}'.format(e))
+                self.logger.warning('ConTest :: Polling failed with a temporary error: {}'.format(e))
             except Exception:
                 self.logger.exception('Polling failed with an unexpected exception:')
             self.action_id = None
-            self.logger.info('Retry will happen in {} seconds'.format(
+            self.logger.info('ConTest :: Retry will happen in {} seconds'.format(
                 wait_on_error))
             await asyncio.sleep(wait_on_error)
 
     async def identify(self):
         """Identify target against HawkBit."""
-        self.logger.info('Sending identifying information to HawkBit')
+        self.logger.info('ConTest :: Sending identifying information to HawkBit')
         # identify
         await self.ddi.configData(ConfigStatusExecution.closed,
                                   ConfigStatusResult.success, **self.attributes)
 
     async def cancel(self, base):
-        self.logger.info('Received cancelation request')
+        self.logger.info('ConTest :: Received cancelation request')
         # retrieve action id from URL
         deployment = base['_links']['cancelAction']['href']
         match = re.search('/cancelAction/(.+)$', deployment)
@@ -86,7 +86,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         stop_info = await self.ddi.cancelAction[action_id]()
         stop_id = stop_info['cancelAction']['stopId']
         # Reject cancel request
-        self.logger.info('Rejecting cancelation request')
+        self.logger.info('ConTest :: Rejecting cancelation request')
         await self.ddi.cancelAction[stop_id].feedback(
             CancelStatusExecution.rejected,
             CancelStatusResult.success,
@@ -103,7 +103,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         RAUC install operation.
         """
         if self.action_id is not None:
-            self.logger.info('Deployment is already in progress')
+            self.logger.info('ConTest :: Deployment is already in progress')
             return
 
         status_result = DeploymentStatusResult.success
@@ -220,12 +220,12 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             try:
                 subprocess.run("reboot")
             except subprocess.CalledProcessError as e:
-                self.logger.error("Reboot failed: {}".format(e))
+                self.logger.error("ConTest :: Reboot failed: {}".format(e))
 
     async def sleep(self, base):
         """Sleep time suggested by HawkBit."""
         sleep_str = base['config']['polling']['sleep']
-        self.logger.info('Will sleep for {}'.format(sleep_str))
+        self.logger.info('ConTest :: Will sleep for {}'.format(sleep_str))
         t = datetime.strptime(sleep_str, '%H:%M:%S')
         delta = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
         await asyncio.sleep(delta.total_seconds())
@@ -260,7 +260,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                                                       autostart, autoremove, timeout)
             self.handle_unit(container_name, autostart, autoremove)
         except Exception as e:
-            self.logger.error("Updating {} failed ({})".format(container_name, e))
+            self.logger.error("ConTest :: Updating {} failed ({})".format(container_name, e))
             return False
         return True
 
@@ -273,7 +273,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             self.ostree_stage_tree(rev_number)
             self.delete_init_var()
         except Exception as e:
-            self.logger.error("Updating the OS failed ({})".format(e))
+            self.logger.error("ConTest :: Updating the OS failed ({})".format(e))
             return False
         return True
 
@@ -299,7 +299,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             with open(PATH_REBOOT_DATA, "w") as f:
                 json.dump(reboot_data, f)
         except IOError as e:
-            self.logger.error("Writing reboot data failed ({})".format(e))
+            self.logger.error("ConTest :: Writing reboot data failed ({})".format(e))
 
     def feedback_for_os_deployment(self, revision):
         """
@@ -316,7 +316,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             with open(PATH_REBOOT_DATA, "r") as f:
                 reboot_data = json.load(f)
             if reboot_data is None:
-                self.logger.error("Rebooting data loading failed")
+                self.logger.error("ConTest :: Rebooting data loading failed")
         except FileNotFoundError:
             return (False, None)
 
@@ -436,7 +436,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         try:
             os.remove(PATH_NOTIFY_SOCKET)
         except FileNotFoundError as e:
-            self.logger.error("Error while removing socket ({})".format(e))
+            self.logger.error("ConTest :: Error while removing socket ({})".format(e))
 
         self.action_id = None
 
