@@ -212,7 +212,7 @@ class AsyncUpdater(object):
             refs = list(refs)
             container_nb = len(refs)
             self.logger.info("ConTest :: There are {} containers to be started".format(container_nb))
-            for i in range(container_nb - 1, -1, -1):
+            for i in range(container_nb): #for i in range(container_nb - 1, -1, -1):
                 self.logger.info("ConTest :: Dealing with container nr {}".format(i)) 
                 container_name = refs[i].split(':')[1]
                 self.logger.info("ConTest :: Container nr {} is {}".format(i, container_name)) 
@@ -224,14 +224,28 @@ class AsyncUpdater(object):
                 if not res:
                     self.logger.error("ConTest :: Error when checking out container:{}".format(container_name))
                     break
-                self.logger.info("ConTest :: Use create_and_start_unit() function to start {}".format(container_name))
-                self.create_and_start_unit(container_name)
+                self.logger.info("ConTest :: Use create_unit() function to create {}".format(container_name))
+                self.create_unit(container_name)
                 self.logger.info("ConTest :: Finishing with container nr {}".format(i))
+            self.logger.info("ConTest :: All units have been created.")
+            # TODO : systemd demon-reload
+            for ref in refs:
+                container_name = ref.split(':')[1]
+                # Start unit only if AUTOSTART exists
+                if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
+                    self.start_unit(container_name)
+            self.logger.info("ConTest :: All units have been started.")
         except (GLib.Error, Exception) as e:
             self.logger.error("ConTest :: Error checking out containers repo ({})".format(e))
             res = False
         finally:
             return res
+
+    def create_unit(self, container_name):
+        """This method copies the .service file to /etc/systemd/system/ in order to create the unit for container_name."""
+        self.logger.info("ConTest :: Copy the service file to /etc/systemd/system/{}.service".format(container_name))
+        shutil.copy(PATH_APPS + '/' + container_name + '/systemd.service',
+                    PATH_SYSTEMD_UNITS + container_name + '.service')
 
     def start_unit(self, container_name):
         """This method starts the systemd unit for container_name."""
@@ -247,13 +261,13 @@ class AsyncUpdater(object):
         self.logger.info("ConTest :: Disable the container {}".format(container_name))
         self.systemd.DisableUnitFiles([container_name + '.service'], False)
 
-    def create_and_start_unit(self, container_name):
-        """This method creates the unit for container_name, and starts it of AUTOSTART exists."""
-        self.logger.info("ConTest :: Copy the service file to /etc/systemd/system/{}.service".format(container_name))
-        shutil.copy(PATH_APPS + '/' + container_name + '/systemd.service',
-                    PATH_SYSTEMD_UNITS + container_name + '.service')
-        if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
-            self.start_unit(container_name)
+#    def create_and_start_unit(self, container_name):
+#        """This method creates the unit for container_name, and starts it if AUTOSTART exists."""
+#        self.logger.info("ConTest :: Copy the service file to /etc/systemd/system/{}.service".format(container_name))
+#        shutil.copy(PATH_APPS + '/' + container_name + '/systemd.service',
+#                    PATH_SYSTEMD_UNITS + container_name + '.service')
+#        if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
+#            self.start_unit(container_name)
 
     def pull_ostree_ref(self, is_container, ref_sha, ref_name=None):
         """
