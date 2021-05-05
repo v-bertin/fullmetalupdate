@@ -209,11 +209,12 @@ class AsyncUpdater(object):
             self.logger.info("ConTest :: Entering Try Block")
             [_, refs] = self.repo_containers.list_refs(None, None)
             self.logger.info("ConTest :: Getting container list")
+            refs = list(refs.values())
             container_nb = len(refs)
             self.logger.info("ConTest :: There are {} containers to be started".format(container_nb))
             for i in range(container_nb - 1, -1, -1):
                 self.logger.info("ConTest :: Dealing with container nr {}".format(i)) 
-                container_name = refs[i].split(':')[1]
+                container_name = refs[i]
                 self.logger.info("ConTest :: Container nr {} is {}".format(i, container_name)) 
                 if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + VALIDATE_CHECKOUT):
                     self.logger.info("ConTest :: Updating container ID")
