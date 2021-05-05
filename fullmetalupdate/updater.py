@@ -229,6 +229,9 @@ class AsyncUpdater(object):
                 self.logger.info("ConTest :: Finishing with container nr {}".format(i))
             self.logger.info("ConTest :: All units have been created.")
             # TODO : systemd demon-reload
+            self.logger.info("ConTest :: Start reload of all unit files")
+            self.systemd.Reload()
+            self.logger.info("ConTest :: Reload of all unit files is done")
             for ref in refs:
                 container_name = ref.split(':')[1]
                 # Start unit only if AUTOSTART exists
