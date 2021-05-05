@@ -210,9 +210,11 @@ class AsyncUpdater(object):
             [_, refs] = self.repo_containers.list_refs(None, None)
             self.logger.info("ConTest :: Getting container list")
             container_nb = len(refs)
+            self.logger.info("ConTest :: There are {} containers to be started".format(container_nb))
             for i in range(container_nb - 1, -1, -1):
+                self.logger.info("ConTest :: Dealing with container nr {}".format(i)) 
                 container_name = refs[i].split(':')[1]
-                self.logger.info("ConTest :: Dealing with container nr {} = {}".format(i, container_name)) 
+                self.logger.info("ConTest :: Container nr {} is {}".format(i, container_name)) 
                 if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + VALIDATE_CHECKOUT):
                     self.logger.info("ConTest :: Updating container ID")
                     self.checkout_container(container_name, None)
