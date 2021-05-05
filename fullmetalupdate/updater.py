@@ -207,8 +207,9 @@ class AsyncUpdater(object):
 
         try:
             [_, refs] = self.repo_containers.list_refs(None, None)
-            for ref in refs:
-                container_name = ref.split(':')[1]
+            container_nb = len(refs)
+            for i in range(container_nb - 1, -1, -1):
+                container_name = refs[i].split(':')[1]
                 if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + VALIDATE_CHECKOUT):
                     self.checkout_container(container_name, None)
                     self.update_container_ids(container_name)
@@ -219,7 +220,8 @@ class AsyncUpdater(object):
         except (GLib.Error, Exception) as e:
             self.logger.error("ConTest :: Error checking out containers repo ({})".format(e))
             res = False
-        return res
+        finally:
+            return res
 
     def start_unit(self, container_name):
         """This method starts the systemd unit for container_name."""
