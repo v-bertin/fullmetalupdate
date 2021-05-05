@@ -206,17 +206,24 @@ class AsyncUpdater(object):
         self.logger.info("ConTest :: Getting refs from repo:{}".format(PATH_REPO_APPS))
 
         try:
+            self.logger.info("ConTest :: Entering Try Block")
             [_, refs] = self.repo_containers.list_refs(None, None)
+            self.logger.info("ConTest :: Getting container list")
             container_nb = len(refs)
             for i in range(container_nb - 1, -1, -1):
                 container_name = refs[i].split(':')[1]
+                self.logger.info("ConTest :: Dealing with container nr {} = {}".format(i, container_name)) 
                 if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + VALIDATE_CHECKOUT):
+                    self.logger.info("ConTest :: Updating container ID")
                     self.checkout_container(container_name, None)
                     self.update_container_ids(container_name)
+                    self.logger.info("ConTest :: Container ID updated")
                 if not res:
                     self.logger.error("ConTest :: Error when checking out container:{}".format(container_name))
                     break
+                self.logger.info("ConTest :: Use create_and_start_unit() function to start {}".format(container_name))
                 self.create_and_start_unit(container_name)
+                self.logger.info("ConTest :: Finishing with container nr {}".format(i))
         except (GLib.Error, Exception) as e:
             self.logger.error("ConTest :: Error checking out containers repo ({})".format(e))
             res = False
