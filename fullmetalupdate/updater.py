@@ -7,7 +7,7 @@ import subprocess
 import json
 import gi
 import io
-from contextlib import contextmanager
+import contextlib
 import difflib
 
 gi.require_version("OSTree", "1.0")
@@ -235,7 +235,7 @@ class AsyncUpdater(object):
             self.logger.info("ConTest :: Start reload of all unit files")
 
             stream1 = io.StringIO()
-            with redirect_stdout(stream1):
+            with contextlib.redirect_stdout(stream1):
                 for unit in self.systemd.ListUnits():
                     print(unit[0])
             stream1 = stream1.getvalue()
@@ -243,7 +243,7 @@ class AsyncUpdater(object):
             self.systemd.Reload()
 
             stream2 = io.StringIO()
-            with redirect_stdout(stream2):
+            with contextlib.redirect_stdout(stream2):
                 for unit in self.systemd.ListUnits():
                     print(unit[0])
             stream2 = stream2.getvalue()   
