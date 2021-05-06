@@ -6,6 +6,9 @@ import shutil
 import subprocess
 import json
 import gi
+import io
+from contextlib import contextmanager
+import difflib
 
 gi.require_version("OSTree", "1.0")
 from gi.repository import OSTree, GLib, Gio
@@ -183,7 +186,7 @@ class AsyncUpdater(object):
         container_name (str): the name of the container
 
         Returns:
-         - The rev sha for container_name
+         - The rev sha for container_nameput to an io.StringIO object:
          - None if the container isn't found
         """
         try:
@@ -230,7 +233,25 @@ class AsyncUpdater(object):
             self.logger.info("ConTest :: All units have been created.")
             # TODO : systemd demon-reload
             self.logger.info("ConTest :: Start reload of all unit files")
+
+            stream1 = io.StringIO()
+            with redirect_stdout(stream1):
+                for unit in self.systemd.ListUnits():
+                    print(unit[0])
+            stream1 = stream1.getvalue()
+
             self.systemd.Reload()
+
+            stream2 = io.StringIO()
+            with redirect_stdout(stream2):
+                for unit in self.systemd.ListUnits():
+                    print(unit[0])
+            stream2 = stream2.getvalue()   
+
+            news = difflib.ndiff(stream1, stream2) 
+            for new in news:
+                self.logger.info("ConTest :: ", new)      
+
             self.logger.info("ConTest :: Reload of all unit files is done")
             for ref in refs:
                 container_name = ref.split(':')[1]
