@@ -248,9 +248,9 @@ class AsyncUpdater(object):
                     print(unit[0])
             stream2 = stream2.getvalue()   
 
-            news = difflib.ndiff(stream1, stream2) 
+            news = enumerate(difflib.ndiff(stream1, stream2)) 
             for new in news:
-                self.logger.info("ConTest :: ", new)      
+                self.logger.info("ConTest :: ", new[1])      
 
             self.logger.info("ConTest :: Reload of all unit files is done")
             for ref in refs:
