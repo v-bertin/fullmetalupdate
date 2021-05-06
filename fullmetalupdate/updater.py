@@ -8,6 +8,7 @@ import json
 import gi
 
 import contextlib
+import io
 from difflib import Differ
 
 gi.require_version("OSTree", "1.0")
@@ -234,24 +235,23 @@ class AsyncUpdater(object):
             # TODO : systemd demon-reload
             self.logger.info("ConTest :: Start reload of all unit files")
 
-            stream = open('stream1.log', 'a')
-            with contextlib.redirect_stdout(stream):
+            streamx = io.StringIO()
+            with contextlib.redirect_stdout(streamx):
                 for unit in self.systemd.ListUnits():
                     print(unit[0])
-            stream.close()
+            stream1 = streamx.getvalue().split('\n')
 
             self.systemd.Reload()
 
-            stream = open('stream2.log', 'a')
-            with contextlib.redirect_stdout(stream):
+            streamy = io.StringIO()
+            with contextlib.redirect_stdout(streamy):
                 for unit in self.systemd.ListUnits():
                     print(unit[0])
-            stream.close()   
+            stream2 = streamy.getvalue().split('\n')   
 
-            with open('stream1.log') as stream1, open('stream2.log') as stream2:
-                differ = Differ()
-                for line in differ.compare(stream1.readlines(), stream2.readlines()):
-                    self.logger.info("ConTest :: ", line)
+            differ = Differ()
+            for line in differ.compare(stream1, stream2):
+                self.logger.info("ConTest :: ", line)
 
             self.logger.info("ConTest :: Reload of all unit files is done")
             for ref in refs:
