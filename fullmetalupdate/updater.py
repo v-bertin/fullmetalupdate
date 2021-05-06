@@ -251,7 +251,8 @@ class AsyncUpdater(object):
 
             differ = Differ()
             for line in differ.compare(stream1, stream2):
-                self.logger.info("ConTest :: ", line)
+                msg = "ConTest :: " + line
+                self.logger.info(msg)
 
             self.logger.info("ConTest :: Reload of all unit files is done")
             for ref in refs:
