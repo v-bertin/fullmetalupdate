@@ -396,7 +396,9 @@ class AsyncUpdater(object):
             if service[0][2] == 'not-found':
                 self.logger.info("ConTest :: First installation of the container {} on the "
                                  "system, we create and start the service".format(container_name))
-                self.create_and_start_unit(container_name)
+                self.create_unit(container_name)
+                if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
+                    self.start_unit(container_name)
             else:
                 if autostart == 1:
                     if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
