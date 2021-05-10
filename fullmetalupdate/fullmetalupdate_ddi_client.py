@@ -103,7 +103,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         RAUC install operation.
         """
         if self.action_id is not None:
-            self.logger.info('ConTest :: Deployment is already in progress')
+            self.logger.info('UpdateTest :: Deployment is already in progress')
             return
 
         status_result = DeploymentStatusResult.success
@@ -199,7 +199,8 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
 
                 res = self.update_container(chunk['name'], rev, autostart, autoremove,
                                             notify, timeout)
-
+                msg = "UpdateTest :: " + chunk['name'] + " have been well copied to /etc/systemd/system."
+                self.logger.info(msg)
                 status_execution = DeploymentStatusExecution.closed
 
                 if not res:
@@ -217,17 +218,19 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                     await self.ddi.deploymentBase[self.action_id].feedback(
                         status_execution, status_result, [msg])
                     self.action_id = None
-        
+        self.logger.info("UpdateTest :: Before reload of unit files")
         self.systemd.Reload()
-
+        self.logger.info("UpdateTest :: After reload of unit files")
         for container in containers:
+            msg = "UpdateTest :: Lauching " + container[0] + " ..."
+            self.logger.info(msg)
             self.handle_container(container[0], container[1], container[2])
-
+        self.logger.info("UpdateTest :: All containers have been launched successfully.")
         if reboot_needed:
             try:
                 subprocess.run("reboot")
             except subprocess.CalledProcessError as e:
-                self.logger.error("ConTest :: Reboot failed: {}".format(e))
+                self.logger.error("UpdateTest :: Reboot failed: {}".format(e))
 
     async def sleep(self, base):
         """Sleep time suggested by HawkBit."""
@@ -267,7 +270,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                                                       autostart, autoremove, timeout)
             self.create_unit(container_name)
         except Exception as e:
-            self.logger.error("ConTest :: Updating {} failed ({})".format(container_name, e))
+            self.logger.error("UpdateTest :: Updating {} failed ({})".format(container_name, e))
             return False
         return True
 
@@ -443,7 +446,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         try:
             os.remove(PATH_NOTIFY_SOCKET)
         except FileNotFoundError as e:
-            self.logger.error("ConTest :: Error while removing socket ({})".format(e))
+            self.logger.error("UpdateTest :: Error while removing socket ({})".format(e))
 
         self.action_id = None
 
