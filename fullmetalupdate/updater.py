@@ -377,7 +377,7 @@ class AsyncUpdater(object):
             for fname in filenames:
                 os.lchown(os.path.join(dirpath, fname), CONTAINER_UID, CONTAINER_GID)
 
-    def handle_unit(self, container_name, autostart, autoremove):
+    def handle_container(self, container_name, autostart, autoremove):
         """
         This method will handle the container execution or deletion based on the autostart
         and autoremove arguments.
@@ -396,7 +396,6 @@ class AsyncUpdater(object):
             if service[0][2] == 'not-found':
                 self.logger.info("ConTest :: First installation of the container {} on the "
                                  "system, we create and start the service".format(container_name))
-                self.create_unit(container_name)
                 if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
                     self.start_unit(container_name)
             else:

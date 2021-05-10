@@ -141,6 +141,8 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         notify = None
         timeout = None
 
+        containers = []
+
         for chunk in deploy_info['deployment']['chunks']:
             # parse the metadata included in the update
             for meta in chunk['metadata']:
@@ -191,7 +193,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 self.action_id = None
 
             elif chunk['part'] == 'bApp':
-
+                containers.append([chunk['name'], autostart, autoremove])
                 res = False
                 self.logger.info("App {} v.{} - updating...".format(chunk['name'], chunk['version']))
 
@@ -215,6 +217,11 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                     await self.ddi.deploymentBase[self.action_id].feedback(
                         status_execution, status_result, [msg])
                     self.action_id = None
+        
+        self.systemd.Reload()
+
+        for container in containers:
+            self.handle_container(container[0], container[1], container[2])
 
         if reboot_needed:
             try:
@@ -258,7 +265,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             if (autostart == 1) and (notify == 1) and (autoremove != 1):
                 self.create_and_start_feedback_thread(container_name, rev_number,
                                                       autostart, autoremove, timeout)
-            self.handle_unit(container_name, autostart, autoremove)
+            self.create_unit(container_name)
         except Exception as e:
             self.logger.error("ConTest :: Updating {} failed ({})".format(container_name, e))
             return False
