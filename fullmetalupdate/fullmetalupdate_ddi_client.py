@@ -201,7 +201,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 msg = "UpdateTest :: " + chunk['name'] + " have been well copied to /etc/systemd/system."
                 self.logger.info(msg)
                 status_execution = DeploymentStatusExecution.closed
-                containers.append(container(chunk['name'], chunk['version'], autostart, autostart, status_execution, res, notify))
+                containers.append(container(chunk['name'], chunk['version'], autostart, autoremove, status_execution, res, notify))
 
                 #if not res:
                 #    msg = "App {} v.{} Deployment failed".format(chunk['name'], chunk['version'])
