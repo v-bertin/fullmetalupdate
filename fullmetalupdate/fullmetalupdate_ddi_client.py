@@ -201,7 +201,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 msg = "UpdateTest :: " + chunk['name'] + " have been well copied to /etc/systemd/system."
                 self.logger.info(msg)
                 status_execution = DeploymentStatusExecution.closed
-                cont = container(chunk['name'], chunk['version'], autostart, autoremove, status_execution, res, notify)
+                cont = Container(chunk['name'], chunk['version'], autostart, autoremove, status_execution, res, notify)
                 containers.append(cont)
 
                 #if not res:
@@ -502,7 +502,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
 
         return end_msg
 
-class container:
+class Container:
     def __init__(self, name, version, autostart, autoremove, status_execution, status_update, notify) -> None:
         self.name = name
         self.version = version
