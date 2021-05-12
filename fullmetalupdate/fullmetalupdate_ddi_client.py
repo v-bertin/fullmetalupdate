@@ -193,7 +193,6 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 self.action_id = None
 
             elif chunk['part'] == 'bApp':
-                containers.append([chunk['name'], autostart, autoremove])
                 res = False
                 self.logger.info("App {} v.{} - updating...".format(chunk['name'], chunk['version']))
 
@@ -202,30 +201,50 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 msg = "UpdateTest :: " + chunk['name'] + " have been well copied to /etc/systemd/system."
                 self.logger.info(msg)
                 status_execution = DeploymentStatusExecution.closed
+                containers.append(container(chunk['name'], chunk['version'], autostart, autostart, status_execution, res, notify))
 
-                if not res:
-                    msg = "App {} v.{} Deployment failed".format(chunk['name'], chunk['version'])
-                    self.logger.error(msg)
-                    status_result = DeploymentStatusResult.failure
-                    await self.ddi.deploymentBase[self.action_id].feedback(
-                        status_execution, status_result, [msg])
-                    self.action_id = None
+                #if not res:
+                #    msg = "App {} v.{} Deployment failed".format(chunk['name'], chunk['version'])
+                #    self.logger.error(msg)
+                #    status_result = DeploymentStatusResult.failure
+                #    await self.ddi.deploymentBase[self.action_id].feedback(
+                #        status_execution, status_result, [msg])
+                #    self.action_id = None
                 # sending positive feedback only is the container isn't a notify container
-                elif notify != 1:
-                    msg = "App {} v.{} Deployment succeed".format(chunk['name'], chunk['version'])
-                    self.logger.info(msg)
-                    status_result = DeploymentStatusResult.success
-                    await self.ddi.deploymentBase[self.action_id].feedback(
-                        status_execution, status_result, [msg])
-                    self.action_id = None
+                #elif notify != 1:
+                #    msg = "App {} v.{} Deployment succeed".format(chunk['name'], chunk['version'])
+                #    self.logger.info(msg)
+                #    status_result = DeploymentStatusResult.success
+                #    await self.ddi.deploymentBase[self.action_id].feedback(
+                #        status_execution, status_result, [msg])
+                #    self.action_id = None
+
         self.logger.info("UpdateTest :: Before reload of unit files")
         self.systemd.Reload()
         self.logger.info("UpdateTest :: After reload of unit files")
+
         for container in containers:
-            msg = "UpdateTest :: Lauching " + container[0] + " ..."
+            msg = "UpdateTest :: Lauching " + container.name + " ..."
             self.logger.info(msg)
-            self.handle_container(container[0], container[1], container[2])
+            container.status_update &= self.handle_container(container.name, container.autostart, container.autoremove)
+
+            if not container.status_update:
+                msg = "App {} v.{} Deployment failed".format(container.name, container.version)
+                self.logger.error(msg)
+                status_result = DeploymentStatusResult.failure
+                await self.ddi.deploymentBase[self.action_id].feedback(
+                    container.status_execution, status_result, [msg])
+                self.action_id = None
+            elif container.notify != 1:
+                msg = "App {} v.{} Deployment succeed".format(container.name, container.version)
+                self.logger.info(msg)
+                status_result = DeploymentStatusResult.success
+                await self.ddi.deploymentBase[self.action_id].feedback(
+                    container.status_execution, status_result, [msg])
+                self.action_id = None
+
         self.logger.info("UpdateTest :: All containers have been launched successfully.")
+
         if reboot_needed:
             try:
                 subprocess.run("reboot")
@@ -481,3 +500,13 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 end_msg = "\nContainer has failed to rollback."
 
         return end_msg
+
+class container:
+    def __init__(self, name, version, autostart, autoremove, status_execution, status_update, notify) -> None:
+        self.name = name
+        self.version = version
+        self.autostart = autostart
+        self.autoremove = autoremove
+        self.status_execution = status_execution
+        self.status_update = status_update
+        self.notify = notify

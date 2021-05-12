@@ -388,24 +388,29 @@ class AsyncUpdater(object):
                          otherwise
         autoremove (int): if set to 1, the container's directory will be deleted
         """
-        if autoremove == 1:
-            self.logger.info("ConTest :: Remove the directory: {}".format(PATH_APPS + '/' + container_name))
-            shutil.rmtree(PATH_APPS + '/' + container_name)
-        else:
-            service = self.systemd.ListUnitsByNames([container_name + '.service'])
-            if service[0][2] == 'not-found':
-                self.logger.info("ConTest :: First installation of the container {} on the "
-                                 "system, we create and start the service".format(container_name))
-                if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
-                    self.start_unit(container_name)
+        try:
+            if autoremove == 1:
+                self.logger.info("ConTest :: Remove the directory: {}".format(PATH_APPS + '/' + container_name))
+                shutil.rmtree(PATH_APPS + '/' + container_name)
             else:
-                if autostart == 1:
-                    if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
-                        open(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART, 'a').close()
-                    self.start_unit(container_name)
-                else:
+                service = self.systemd.ListUnitsByNames([container_name + '.service'])
+                if service[0][2] == 'not-found':
+                    self.logger.info("ConTest :: First installation of the container {} on the "
+                                    "system, we create and start the service".format(container_name))
                     if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
-                        os.remove(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART)
+                        self.start_unit(container_name)
+                else:
+                    if autostart == 1:
+                        if not os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
+                            open(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART, 'a').close()
+                        self.start_unit(container_name)
+                    else:
+                        if os.path.isfile(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART):
+                            os.remove(PATH_APPS + '/' + container_name + '/' + FILE_AUTOSTART)
+        except Exception as e:
+            self.logger.error("UpdateTest :: Handling {} failed ({})".format(container_name, e))
+            return False
+        return True
 
     def checkout_container(self, container_name, rev_number):
         """
