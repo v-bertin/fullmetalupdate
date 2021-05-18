@@ -248,11 +248,11 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         if(final_result):
             msg = "Hawkbit Update Success : All applications have been updated and correctly restarted."
             self.logger.info(msg)
-            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusResult.success, DeploymentStatusExecution.closed, [msg])
+            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusExecution.closed, DeploymentStatusResult.success, [msg])
         else:
             msg = "Hawkbit Update Failure : " + fails + "failed to update and / or to restart."
-            self.logger.info(msg)
-            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusResult.success, DeploymentStatusExecution.closed, [msg])
+            self.logger.error(msg)
+            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusExecution.closed, DeploymentStatusResult.failure, [msg])
 
         self.logger.info("UpdateTest :: All containers have been launched successfully.")
         self.action_id = None
