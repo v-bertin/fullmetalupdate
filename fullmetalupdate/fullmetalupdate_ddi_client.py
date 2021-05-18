@@ -221,7 +221,8 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         self.logger.info("UpdateTest :: Before reload of unit files")
         self.systemd.Reload()
         self.logger.info("UpdateTest :: After reload of unit files")
-
+        await asyncio.sleep(10)
+        self.logger.info("Sleep finished : Get ready!")
         for container in containers:
             msg = "UpdateTest :: Lauching " + container.name + " ..."
             self.logger.info(msg)
