@@ -191,15 +191,15 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                                            msg)
 
             elif chunk['part'] == 'bApp':
-                res = False
                 self.logger.info("App {} v.{} - updating...".format(chunk['name'], chunk['version']))
-
                 res = self.update_container(chunk['name'], rev, autostart, autoremove,
                                             notify, timeout)
                 msg = "UpdateTest :: " + chunk['name'] + " have been well copied to /etc/systemd/system."
                 self.logger.info(msg)
-                status_execution = DeploymentStatusExecution.closed
-                cont = Container(chunk['name'], chunk['version'], autostart, autoremove, status_execution, res, notify)
+
+                cont = Container(chunk['name'], chunk['version'], autostart, autoremove, notify)
+                cont.status_execution = DeploymentStatusExecution.closed
+                cont.status_update = res
                 containers.append(cont)
 
                 #if not res:
@@ -221,8 +221,9 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         self.logger.info("UpdateTest :: Before reload of unit files")
         self.systemd.Reload()
         self.logger.info("UpdateTest :: After reload of unit files")
-        await asyncio.sleep(10)
-        self.logger.info("Sleep finished : Get ready!")
+
+        final_result = True
+        fails = ""
         for container in containers:
             msg = "UpdateTest :: Lauching " + container.name + " ..."
             self.logger.info(msg)
@@ -231,15 +232,27 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
             if not container.status_update:
                 msg = "App {} v.{} Deployment failed".format(container.name, container.version)
                 self.logger.error(msg)
-                status_result = DeploymentStatusResult.failure
-                await self.ddi.deploymentBase[self.action_id].feedback(
-                    container.status_execution, status_result, [msg])
+                container.status_result = DeploymentStatusResult.failure
+                fails += container.name + " "
+                #await self.ddi.deploymentBase[self.action_id].feedback(
+                #    container.status_execution, status_result, [msg])
             elif container.notify != 1:
                 msg = "App {} v.{} Deployment succeed".format(container.name, container.version)
                 self.logger.info(msg)
-                status_result = DeploymentStatusResult.success
-                await self.ddi.deploymentBase[self.action_id].feedback(
-                    container.status_execution, status_result, [msg])
+                container.status_result = DeploymentStatusResult.success
+                #await self.ddi.deploymentBase[self.action_id].feedback(
+                #    container.status_execution, status_result, [msg])
+
+            final_result &= container.result()
+            
+        if(final_result):
+            msg = "Hawkbit Update Success : All applications have been updated and correctly restarted."
+            self.logger.info(msg)
+            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusResult.success, DeploymentStatusExecution.closed, [msg])
+        else:
+            msg = "Hawkbit Update Failure : " + fails + "failed to update and / or to restart."
+            self.logger.info(msg)
+            await self.ddi.deploymentBase[self.action_id].feedback(DeploymentStatusResult.success, DeploymentStatusExecution.closed, [msg])
 
         self.logger.info("UpdateTest :: All containers have been launched successfully.")
         self.action_id = None
@@ -501,11 +514,20 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         return end_msg
 
 class Container:
-    def __init__(self, name, version, autostart, autoremove, status_execution, status_update, notify) -> None:
+    def __init__(self, name, version, autostart, autoremove, notify) -> None:
         self.name = name
         self.version = version
         self.autostart = autostart
         self.autoremove = autoremove
-        self.status_execution = status_execution
-        self.status_update = status_update
         self.notify = notify
+        self.status_execution = None
+        self.status_update = None
+        self.status_result = None
+    
+    def result(self):
+        res = None
+        if self.status_result == DeploymentStatusResult.success:
+            res = True
+        elif self.status_result == DeploymentStatusResult.failure:
+            res = False
+        return res
