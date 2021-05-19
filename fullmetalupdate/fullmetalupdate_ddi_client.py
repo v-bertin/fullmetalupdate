@@ -471,22 +471,3 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 end_msg = "\nContainer has failed to rollback."
 
         return end_msg
-
-class Container:
-    def __init__(self, name, version, autostart, autoremove, notify) -> None:
-        self.name = name
-        self.version = version
-        self.autostart = autostart
-        self.autoremove = autoremove
-        self.notify = notify
-        self.status_execution = None
-        self.status_update = None
-        self.status_result = None
-     
-    def result(self):
-        res = None
-        if self.status_result == DeploymentStatusResult.success:
-            res = True
-        elif self.status_result == DeploymentStatusResult.failure:
-            res = False
-        return res
