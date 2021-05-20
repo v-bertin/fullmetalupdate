@@ -215,7 +215,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                 self.logger.info(msg)
                 update['status_result'] = DeploymentStatusResult.success
 
-            final_result &= (update['update_result'] == DeploymentStatusResult.success)
+            final_result &= (update['status_result'] == DeploymentStatusResult.success)
         
         if(final_result):
             msg = "Hawkbit Update Success : All applications have been updated and correctly restarted."
