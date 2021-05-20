@@ -192,14 +192,12 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
                                            update['status_result'],
                                            msg)
 
-            elif chunk['part'] == 'bApp':
+            elif update['part'] == 'bApp':
                 self.logger.info("App {} v.{} - updating...".format(update['name'], update['version']))
-                update['status_update'] = self.update_container(update['name'], update['rev'], update['autostart'], update['autoremove'],
-                                            update['notify'], update['timeout'])
-
+                update['status_update'] = self.update_container(update['name'], update['rev'], update['autostart'], update['autoremove'], update['notify'], update['timeout'])
                 update['status_execution'] = DeploymentStatusExecution.closed
                 updates.append(update)
-        
+
         self.systemd.Reload()
 
         final_result = True
