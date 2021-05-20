@@ -136,7 +136,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
 
         self.action_id = action_id
 
-        seq = ('name', 'version', 'rev', 'part', 'autostart', 'autoremove', 'status_execution', 'status_update', 'status_result' 'notify', 'timeout')
+        seq = ('name', 'version', 'rev', 'part', 'autostart', 'autoremove', 'status_execution', 'status_update', 'status_result', 'notify', 'timeout')
         updates = []
 
         for chunk in deploy_info['deployment']['chunks']:
