@@ -486,7 +486,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         except FileNotFoundError as e:
             self.logger.error("Error while removing socket ({})".format(e))
         
-        self.feedbackResults.append(status_update, msg)
+        self.feedbackResults.append((status_update, msg))
 
     def rollback_container(self, container_name, autostart, autoremove):
         """
