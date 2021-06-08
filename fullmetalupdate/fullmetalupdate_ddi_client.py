@@ -239,10 +239,9 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         for update in updates:
             if update['notify'] == 1:
                 threading.Thread.join(next(feedbackThreadIt))
-                status_update, feedbackMsg = self.feedbackResults[update['name']]
-                update['status_update'] &= status_update
+                update['status_update'] &= self.feedbackResults[update['name']]["status_update"]
+                feedbackMsg = self.feedbackResults[update['name']]["msg"]
 
-            # [container_name, status_execution, status_result, status_update, msg]
             if not update['status_update']:
                msg = "App {} v.{} Deployment failed\n {}".format(update['name'], update['version'], feedbackMsg)
                self.logger.error(msg)
@@ -495,7 +494,9 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         except FileNotFoundError as e:
             self.logger.error("Error while removing socket ({})".format(e))
         
-        self.feedbackResults[container_name] = (status_update, msg)
+        self.feedbackResults[container_name] = dict.fromkeys(("status_update, msg"))
+        self.feedbackResults[container_name]["status_update"] = status_update
+        self.feedbackResults[container_name]["msg"] = msg
 
     def rollback_container(self, container_name, autostart, autoremove):
         """
