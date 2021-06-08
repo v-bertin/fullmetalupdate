@@ -48,7 +48,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         self.ddi = DDIClient(session, host, ssl, auth_token, tenant_id, target_name)
         self.action_id = None
         self.feedbackThreads = []
-        self.feedbackResults = []
+        self.feedbackResults = None
 
         os.makedirs(os.path.dirname(PATH_REBOOT_DATA), exist_ok=True)
         os.makedirs(DIR_NOTIFY_SOCKET, exist_ok=True)
@@ -162,6 +162,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         seq = ('name', 'version', 'rev', 'part', 'autostart', 'autoremove', 'status_execution', 'status_update', 'status_result', 'notify', 'timeout')
         updates = []
 
+        # Update process
         for chunk in deploy_info['deployment']['chunks']:
             update = dict.fromkeys(seq)
             # parse the metadata included in the update
@@ -223,21 +224,27 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
 
         self.systemd.Reload()
 
+        seq = [update['name'] for update in updates]
+        self.feedbackResults = dict.fromkeys(seq)
+
+        # Container restart process
+        for update in updates:
+            update['status_update'] &= self.handle_container(update['name'], update['autostart'], update['autoremove'])
+
         final_result = True
         fails = ""
         feedbackThreadIt = iter(self.feedbackThreads)
-        feedbackResultIt = iter(self.feedbackResults)
 
+        # Hawkbit server feedback process
         for update in updates:
-            update['status_update'] &= self.handle_container(update['name'], update['autostart'], update['autoremove'])
             if update['notify'] == 1:
                 threading.Thread.join(next(feedbackThreadIt))
-                status_update, feedbackMsg = next(feedbackResultIt)
+                status_update, feedbackMsg = self.feedbackResults[update['name']]
                 update['status_update'] &= status_update
 
             # [container_name, status_execution, status_result, status_update, msg]
             if not update['status_update']:
-               msg = "App {} v.{} Deployment failed".format(update['name'], update['version']) + "\n" + feedbackMsg
+               msg = "App {} v.{} Deployment failed\n {}".format(update['name'], update['version'], feedbackMsg)
                self.logger.error(msg)
                update['status_result'] = DeploymentStatusResult.failure
                fails += update['name'] + " "
@@ -488,7 +495,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         except FileNotFoundError as e:
             self.logger.error("Error while removing socket ({})".format(e))
         
-        self.feedbackResults.append((status_update, msg))
+        self.feedbackResults[container_name] = (status_update, msg)
 
     def rollback_container(self, container_name, autostart, autoremove):
         """
