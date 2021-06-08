@@ -234,7 +234,7 @@ class FullMetalUpdateDDIClient(AsyncUpdater):
         final_result = True
         fails = ""
         feedbackThreadIt = iter(self.feedbackThreads)
-
+        await asyncio.sleep(10)
         # Hawkbit server feedback process
         for update in updates:
             if update['notify'] == 1:
